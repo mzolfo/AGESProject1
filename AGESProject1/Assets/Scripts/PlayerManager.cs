@@ -38,7 +38,7 @@ public class PlayerManager : MonoBehaviour {
     [SerializeField]
     bool p4In;
 
-
+    int WaveRate = 0;
 
 
 
@@ -46,6 +46,12 @@ public class PlayerManager : MonoBehaviour {
     public float spawnTime = 3f;
     public Transform[] spawnPoints;
 
+    [SerializeField]
+    float TargetedDist = 0f;
+    [SerializeField]
+    GameObject trgetedPlayer;
+    [SerializeField]
+    int chosenspawn;
 
    
 
@@ -57,7 +63,7 @@ private void Awake() //if you need this script to find things do it in awake
 
         Players = new List<GameObject>(); //collect every player that could be in the game ready to be played
         ActivePlayers = new List<GameObject>();
-       // PlayerUIs = new List<GameObject>();
+        //PlayerUIs = new List<GameObject>();
         
         for (int i = 1; i <= 4; i++) // add them to a list so no one needs to find them again.
         {
@@ -68,23 +74,25 @@ private void Awake() //if you need this script to find things do it in awake
 
         for (int i = 0; i < 4; i++) 
         {
-           // CheckedUI = GameObject.Find("Player" + i + "UI");
-        //    PlayerUIs.Add(CheckedUI);
+            //CheckedUI = GameObject.Find("Player" + i + "UI");
+            //PlayerUIs.Add(CheckedUI);
             PlayerUIs[i].SetActive(false);        
         }
      }
 
     // Use this for initialization
-    void Start () { 
+    void Start()
+    { 
         CurrentCamera = cameraRig.GetComponent<CameraController>();
         foreach (GameObject p in Players)
         { p.SetActive(false); } //deactivate all players as they are prepared to be played with when assigned.
         joinstate = true; //enter joinstate right as we begin.
         
     }
-	
-	// Update is called once per frame
-	void Update () { 
+
+    // Update is called once per frame
+    void Update()
+    {
         if (joinstate)
         {
             JoinGameCheck();
@@ -92,17 +100,29 @@ private void Awake() //if you need this script to find things do it in awake
         }
         else if (beginGame)
         {
-            InvokeRepeating("Spawn", spawnTime, spawnTime);
             OpenPlayerUI();
             beginGame = false;
         }
         else
         {
-            checkisdead();
+            checkisdead(); ///this is calling the player that has deactivated itself to tell the controller whether it is dead.
         }
-        
+       
+    
 	}
 
+    private void FixedUpdate()
+    {
+        if (!joinstate)
+        {
+            if (WaveRate == 0)
+            {
+                Spawn();
+                WaveRate = 30;
+            }
+            else { WaveRate = WaveRate - 1; }
+        }
+    }
 
     void JoinGameCheck()
     {
@@ -170,23 +190,28 @@ private void Awake() //if you need this script to find things do it in awake
     void Spawn()
     {
         int spawnPointIndex = Random.Range(0, spawnPoints.Length);
+        chosenspawn = spawnPointIndex;
         GameObject targetedPlayer = null;
         float targetdist = 1000000000;
-        foreach (GameObject p in ActivePlayers) //the intention here is to find each player's location and set the one closest to the instantiated enemy to be its target
+        foreach (GameObject Player in ActivePlayers) //the intention here is to find each player's location and set the one closest to the instantiated enemy to be its target
         { // I don't know why it doesnt work that way but it seems to split the aggro pretty well anyways. Somehow.
 
-            float checkdist = Vector3.Distance(spawnPoints[spawnPointIndex].position, p.transform.position);
+            float checkdist = Vector3.Distance(spawnPoints[spawnPointIndex].position, Player.transform.position);
             if (checkdist < targetdist)
             {
                 targetdist = checkdist;
-                targetedPlayer = p;
+                targetedPlayer = Player;
+                TargetedDist = targetdist;
+                trgetedPlayer = targetedPlayer;
             }
 
         }
         Instantiate(enemy, spawnPoints[spawnPointIndex].position, spawnPoints[spawnPointIndex].rotation);
         EnemyMovement spawnedScript = enemy.GetComponent<EnemyMovement>();
         if (targetedPlayer != null)
-        { spawnedScript.TargetPlayer = targetedPlayer; }
+        {
+            spawnedScript.TargetPlayer = targetedPlayer;
+        }
         else
         { print("ERROR: NO PLAYER WAS FOUND"); }
 

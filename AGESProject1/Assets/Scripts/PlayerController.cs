@@ -125,7 +125,7 @@ public class PlayerController : MonoBehaviour
     void Die() //unfinished unused
     {
         healthText.text = "Dead";
-        gameObject.SetActive(false);
+       // gameObject.SetActive(false);
         //probably want to play a sound then pass to playermanager that it needs to be deactivated again.
     }
 }

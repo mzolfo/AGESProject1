@@ -1,177 +1,151 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-        public int m_PlayerNumber = 1;         //tell which player this tank belongs to
-        public float m_Speed = 12f;
-        public float m_TurnSpeed = 180f;
+    public GameObject projectile;
+    public Transform projectionTransform;
+    //movement variables
+    public float speed = 6f;
+    public Text scoreText;
+    public Text healthText;
+    public Text damageText;
 
 
+    Rigidbody playerRigidbody;
+    [SerializeField]
+    float currentx;
+    [SerializeField]
+    float currenty;
+    [SerializeField]
+    float currentshootx;
+    [SerializeField]
+    float currentshooty;
 
-        private string m_MovementAxisName;
-        private string m_TurnAxisName;
-        private Rigidbody m_Rigidbody;
-        private float m_MovementInputValue;
-        private float m_TurnInputValue;
-        
+    //health and damage variables
+    [SerializeField]
+    public float health = 100f;
+    public float damage = 5f;
+    public float score = 0f;
 
+    //state variables
+    [SerializeField]
+    public int PlayerNumber;
+    [SerializeField]
+    public bool isDead = false;
+    int recentlyShot;
 
-        private void Awake()
-        {
-            m_Rigidbody = GetComponent<Rigidbody>();
-        }
-
-
-        private void OnEnable()
-        {
-            m_Rigidbody.isKinematic = false;
-            m_MovementInputValue = 0f;
-            m_TurnInputValue = 0f;
-        }
-
-
-        private void OnDisable()
-        {
-            m_Rigidbody.isKinematic = true;
-        }
-
-
-        private void Start()
-        {
-            m_MovementAxisName = "Vertical"; // + m_PlayerNumber
-            m_TurnAxisName = "Horizontal"; // + m_PlayerNumber
-
-
-        }
-
-
-        private void Update()
-        {
-            // Store the player's input and make sure the audio for the engine is playing.
-            m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-
-
-        }
-
-
-
-
-
-        private void FixedUpdate()
-        {
-            // Move and turn the tank.
-            Move();
-            Turn();
-        }
-
-
-        private void Move()
-        {
-            // Adjust the position of the tank based on the player's input.
-            Vector3 movement = transform.forward * m_MovementInputValue * m_Speed * Time.deltaTime;
-            m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
-
-        }
-
-
-        private void Turn()
-        {
-            // Adjust the rotation of the tank based on the player's input.
-            float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
-            Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
-
-            m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
-        }
-    
-}
-
-
-/*
-
-public class TankMovement : MonoBehaviour
-{
-    public int m_PlayerNumber = 1;         //tell which player this tank belongs to
-    public float m_Speed = 12f;            
-    public float m_TurnSpeed = 180f;       
-   
-
-    
-    private string m_MovementAxisName;     
-    private string m_TurnAxisName;         
-    private Rigidbody m_Rigidbody;         
-    private float m_MovementInputValue;    
-    private float m_TurnInputValue;        
-    private float m_OriginalPitch;         
-
-
-    private void Awake()
+    void Awake()
     {
-        m_Rigidbody = GetComponent<Rigidbody>();
+
+
+        playerRigidbody = GetComponent<Rigidbody>();
     }
-
-
-    private void OnEnable ()
-    {
-        m_Rigidbody.isKinematic = false;
-        m_MovementInputValue = 0f;
-        m_TurnInputValue = 0f;
-    }
-
-
-    private void OnDisable ()
-    {
-        m_Rigidbody.isKinematic = true;
-    }
-
-
-    private void Start()
-    {
-        m_MovementAxisName = "Vertical" + m_PlayerNumber;
-        m_TurnAxisName = "Horizontal" + m_PlayerNumber;
-
-        m_OriginalPitch = m_MovementAudio.pitch;
-    }
-    
 
     private void Update()
     {
-        // Store the player's input and make sure the audio for the engine is playing.
-        m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-        m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-
-        EngineAudio();
+        scoreText.text = "Score: " + score;
+        healthText.text = "Health: " + health;
+        damageText.text = "Damage: " + damage;
     }
 
-
-   
-
-
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        // Move and turn the tank.
+        if (health <= 0)
+        {
+            isDead = true;
+        }
+
+        //just testing to see how the inputs are doing in the engine window.
+        currentx = Input.GetAxis("MoveHorizontal" + PlayerNumber);
+        currenty = Input.GetAxis("MoveVertical" + PlayerNumber);
+        currentshootx = Input.GetAxis("ShootHorizontal" + PlayerNumber);
+        currentshooty = Input.GetAxis("ShootVertical" + PlayerNumber);
+
+
+        if (recentlyShot != 0)
+        {
+            recentlyShot = recentlyShot - 1;
+        }
+
+        if (currentshootx != 0 || currentshooty != 0)
+        {
+            if (recentlyShot == 0)
+            {
+                Shoot();
+            }
+            //fire a projectile and wait a second to fire another.
+        }
+
         Move();
-        Turn();
+        turn();
+        if (isDead)
+        {
+            Die();
+        }
     }
 
 
-    private void Move()
+    void Move()
     {
-        // Adjust the position of the tank based on the player's input.
-        Vector3 movement = transform.forward * m_MovementInputValue * m_Speed * Time.deltaTime;
-        m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
 
+        //calculate the speed and distance the player should be moving according to their inputs
+        float h = Input.GetAxis("MoveHorizontal" + PlayerNumber) * speed * Time.deltaTime;
+        float v = (Input.GetAxis("MoveVertical" + PlayerNumber) * -1) * speed * Time.deltaTime;
+        Vector3 moveVec = new Vector3(h, 0, v);
+        transform.Translate(moveVec, Space.World);
     }
 
-
-    private void Turn()
+    void turn()
     {
-        // Adjust the rotation of the tank based on the player's input.
-        float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
-        Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
+        if (Input.GetAxis("ShootHorizontal" + PlayerNumber) == 0 && Input.GetAxis("ShootVertical" + PlayerNumber) == 0)
+        {
 
-        m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
+        }
+        else {
+            Vector3 lookVec = new Vector3(Input.GetAxis("ShootHorizontal" + PlayerNumber), 0, (Input.GetAxis("ShootVertical" + PlayerNumber) * -1));
+
+            transform.rotation = Quaternion.LookRotation(lookVec, Vector3.up);
+        }
+
     }
-} */
+
+    void Shoot()
+    {
+        GameObject ProjectileInstance = Instantiate(projectile, projectionTransform.position, projectionTransform.rotation) as GameObject;
+        Projectile shotscript = ProjectileInstance.GetComponent<Projectile>();
+        shotscript.owner = PlayerNumber;
+        shotscript.Owner = GetComponent<PlayerController>();
+        recentlyShot = 5;
+    }
+
+
+    void Die() //unfinished unused
+    {
+        healthText.text = "Dead";
+        gameObject.SetActive(false);
+        //probably want to play a sound then pass to playermanager that it needs to be deactivated again.
+    }
+}
+
+
+
+
+
+
+
+/*
+ so what do we want for functionality here. Every controller needs its right and left control sticks.
+ It would be nice to also have the dpad for any of those. 
+ we need the a button to work for progression and join state
+ probably want that start button as well.
+     */
+
+
+
+
+
+
+

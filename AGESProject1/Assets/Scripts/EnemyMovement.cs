@@ -15,6 +15,8 @@ public class EnemyMovement : MonoBehaviour
     // Color CurrentColor;
     // [SerializeField]
     // Color whatsbeinglerpedthen;
+    AudioSource enemyAudio;
+    public AudioClip takeDamage;
 
     public GameObject TargetPlayer;
     PlayerController targetPlayerStats;
@@ -27,7 +29,7 @@ public class EnemyMovement : MonoBehaviour
 
     void Awake()
     {
-        
+        enemyAudio = GetComponent<AudioSource>();
         targetPlayerStats = TargetPlayer.GetComponent<PlayerController>();
         target = TargetPlayer.transform;
         // myRenderer = GetComponent<Renderer>();
@@ -47,7 +49,7 @@ public class EnemyMovement : MonoBehaviour
             nav.enabled = false;
             if (hasHit == 0)
             {
-                targetPlayerStats.health = targetPlayerStats.health - 5f;
+                targetPlayerStats.TakeDamage();
                 hasHit = 100;
             }
             else
@@ -76,6 +78,11 @@ public class EnemyMovement : MonoBehaviour
         }
     }
 
+    public void damaged()
+    {
+        enemyAudio.clip = takeDamage;
+        enemyAudio.Play();
+    }
 
 }
 
@@ -125,16 +132,3 @@ public class EnemyMovement : MonoBehaviour
     //Color stateColor = new Color(1f, 0.5f, 0.063f, 1f);
 
     // }
-
-
-    //check if hit on update
-    //take damage equal to player's damage rating
-
-
-
-
-
-
-
-//we need to script priority here.
-// enemies need to pick whichever player is closest to them at a given time

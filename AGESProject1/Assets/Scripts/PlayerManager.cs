@@ -21,6 +21,7 @@ public class PlayerManager : MonoBehaviour {
     GameObject CheckedUI;
 
     public GameObject InstructText;
+    public Text WaveText;
     [SerializeField]
     bool joinstate = false;
     [SerializeField]
@@ -37,10 +38,15 @@ public class PlayerManager : MonoBehaviour {
     bool p3In;
     [SerializeField]
     bool p4In;
+    int storedWaveRate = 40;
+    int CurrentWaveRate = 0;
+    public int deadplayers = 0;
 
-    int WaveRate = 0;
-
-
+    [SerializeField]
+    int wave = 1;
+    [SerializeField]
+    int waveEnemies = 20;
+    int nextWaveEnemies = 45;
 
     public GameObject enemy;
     public float spawnTime = 3f;
@@ -82,12 +88,13 @@ private void Awake() //if you need this script to find things do it in awake
 
     // Use this for initialization
     void Start()
-    { 
+    {
+        
         CurrentCamera = cameraRig.GetComponent<CameraController>();
         foreach (GameObject p in Players)
         { p.SetActive(false); } //deactivate all players as they are prepared to be played with when assigned.
         joinstate = true; //enter joinstate right as we begin.
-        
+        WaveText.text = "";
     }
 
     // Update is called once per frame
@@ -113,14 +120,25 @@ private void Awake() //if you need this script to find things do it in awake
 
     private void FixedUpdate()
     {
-        if (!joinstate)
+        if (!joinstate) // if there are no more enemies in a wave wait a couple seconds and start a new one. if there are no waves left be done here.
         {
-            if (WaveRate == 0)
+            if (wave < 8)
             {
-                Spawn();
-                WaveRate = 30;
+                if (waveEnemies >= 1)
+                {
+                    if (CurrentWaveRate == 0)
+                    {
+                        Spawn();
+                        waveEnemies = waveEnemies - 1;
+                        CurrentWaveRate = storedWaveRate;
+                    }
+                    else { CurrentWaveRate = CurrentWaveRate - 1; }
+                }
+                else if (waveEnemies == 0)
+                {
+                    UpdateWaveRate();
+                }
             }
-            else { WaveRate = WaveRate - 1; }
         }
     }
 
@@ -183,10 +201,53 @@ private void Awake() //if you need this script to find things do it in awake
         {
             joinstate = false;
             beginGame = true;
+            WaveText.text = "Wave: " + wave;
         }
         else { playersStarting = 0; }
     }
 
+    void UpdateWaveRate()
+    {
+        if (wave <= 8)
+        {
+            wave = wave + 1;
+            storedWaveRate = storedWaveRate - 5;
+            waveEnemies = nextWaveEnemies;
+            nextWaveEnemies = nextWaveEnemies + 15;
+            WaveText.text = "Wave: " + wave;
+        }
+        else if (wave == 8)
+        {
+            win();
+            playersStarting = 0;
+            InstructText.SetActive(true);
+            Text messageText = InstructText.GetComponent<Text>();
+            messageText.text = "THOU ART VICTORIOUS!\n\nHOLD START TO RESET";
+            if (Input.GetKey("joystick 1 button 7") && p1In)
+            {
+                playersStarting = playersStarting + 1;
+            }
+            if (Input.GetKey("joystick 2 button 7") && p2In)
+            {
+                playersStarting = playersStarting + 1;
+            }
+            if (Input.GetKey("joystick 3 button 7") && p3In)
+            {
+                playersStarting = playersStarting + 1;
+            }
+            if (Input.GetKey("joystick 4 button 7") && p4In)
+            {
+                playersStarting = playersStarting + 1;
+            }
+
+            if (playersStarting == numPlayers && playersStarting != 0)
+            {
+                SceneManager.LoadScene(0);
+            }
+            else { }
+
+        }
+    }
     void Spawn()
     {
         int spawnPointIndex = Random.Range(0, spawnPoints.Length);
@@ -236,21 +297,14 @@ private void Awake() //if you need this script to find things do it in awake
 
     void checkisdead()
     {
-        int deadplayers = 0;
-        foreach (GameObject p in ActivePlayers)
-        {
-            PlayerController playscript = p.GetComponent<PlayerController>();
-            if (playscript.isDead)
-            {
-                deadplayers = deadplayers + 1;
-            }
-
-        }
+       
         if (deadplayers == ActivePlayers.Count)
         {
             playersStarting = 0;
+            InstructText.SetActive(true);
             Text messageText = InstructText.GetComponent<Text>();
-            messageText.text = "YOU HATH BEEN SLAIN!/n/nHOLD START TO RESET";
+            messageText.text = "THOU HATH BEEN SLAIN!\n\nHOLD START TO RESET";
+            win();
             if (Input.GetKey("joystick 1 button 7") && p1In)
             {
                 playersStarting = playersStarting + 1;
@@ -270,10 +324,24 @@ private void Awake() //if you need this script to find things do it in awake
 
             if (playersStarting == numPlayers && playersStarting != 0)
             {
-                SceneManager.LoadScene(1);
+                SceneManager.LoadScene(0);
             }
             else {  }
         }
+    }
+
+    void win()
+    {
+        int winnum = 0;
+        float topscore = 0;
+        PlayerController checkScript;
+        foreach (GameObject p in ActivePlayers)
+        {
+            checkScript = p.GetComponent<PlayerController>();
+            if (checkScript.score > topscore)
+            { topscore = checkScript.score; winnum = checkScript.PlayerNumber; }
+        }
+        WaveText.text = "Winner: Player " + winnum;
     }
 }
 

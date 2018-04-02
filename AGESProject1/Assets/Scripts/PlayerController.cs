@@ -13,6 +13,14 @@ public class PlayerController : MonoBehaviour
     public Text healthText;
     public Text damageText;
 
+    AudioSource playerSounds;
+    
+    public AudioClip hurtSound;
+    public AudioClip deathSound;
+
+
+    GameObject myManager;
+    PlayerManager managerScript;
 
     Rigidbody playerRigidbody;
     [SerializeField]
@@ -39,9 +47,11 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-
-
+        playerSounds = GetComponent<AudioSource>();
+        myManager = GameObject.Find("PlayerManager");
+        managerScript = myManager.GetComponent<PlayerManager>();
         playerRigidbody = GetComponent<Rigidbody>();
+       
     }
 
     private void Update()
@@ -87,6 +97,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void TakeDamage()
+    {
+        health = health - 5f;
+        playerSounds.clip = hurtSound;
+        playerSounds.Play();
+        
+    }
+
+    
 
     void Move()
     {
@@ -114,6 +133,7 @@ public class PlayerController : MonoBehaviour
 
     void Shoot()
     {
+        
         GameObject ProjectileInstance = Instantiate(projectile, projectionTransform.position, projectionTransform.rotation) as GameObject;
         Projectile shotscript = ProjectileInstance.GetComponent<Projectile>();
         shotscript.owner = PlayerNumber;
@@ -122,11 +142,14 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    void Die() //unfinished unused
+    void Die() 
     {
+        playerSounds.clip = deathSound;
+        playerSounds.Play();
         healthText.text = "Dead";
-       // gameObject.SetActive(false);
-        //probably want to play a sound then pass to playermanager that it needs to be deactivated again.
+        managerScript.deadplayers = managerScript.deadplayers + 1;
+        gameObject.SetActive(false);
+        
     }
 }
 

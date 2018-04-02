@@ -27,8 +27,9 @@ public class Projectile : MonoBehaviour {
         else if (other.tag == "Enemy") //if it is an enemy hurt it and die
         {
            damagedEnemy = other.GetComponent<EnemyMovement>();
+           damagedEnemy.damaged();
            damagedEnemy.ownHealth = damagedEnemy.ownHealth - 5f;
-            Owner.score = Owner.score + 5;
+           Owner.score = Owner.score + 5;
            Destroy(gameObject);
         }
         else { } // otherwise ignore it and keep going
